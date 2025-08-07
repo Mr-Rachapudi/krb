@@ -45,7 +45,7 @@ public class EmployeeService {
     
     public Optional<EmployeeDto> getEmployeeByUsername(String username) {
         return employeeRepository.findByUsername(username)
-                .map(this::convertToDto);
+                .map(employee -> convertToDto(employee, true));
     }
     
     public EmployeeDto createEmployee(CreateEmployeeRequest request) {
@@ -120,6 +120,10 @@ public class EmployeeService {
     }
     
     private EmployeeDto convertToDto(Employee employee) {
+        return convertToDto(employee, false);
+    }
+    
+    private EmployeeDto convertToDto(Employee employee, boolean includePassword) {
         EmployeeDto dto = new EmployeeDto();
         dto.setId(employee.getId());
         dto.setUsername(employee.getUsername());
@@ -130,6 +134,9 @@ public class EmployeeService {
         dto.setCreatedAt(employee.getCreatedAt());
         dto.setUpdatedAt(employee.getUpdatedAt());
         dto.setCustomerCount(customerRepository.countCustomersByEmployee(employee.getId()));
+        if (includePassword) {
+            dto.setPassword(employee.getPassword());
+        }
         return dto;
     }
 }
