@@ -10,6 +10,30 @@ import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { apiService } from '../services/api';
 import { Customer, Employee } from '../types';
 
+const formatSSN = (value: string): string => {
+  const digits = value.replace(/\D/g, '');
+  
+  const limitedDigits = digits.slice(0, 9);
+  
+  if (limitedDigits.length >= 6) {
+    return `${limitedDigits.slice(0, 3)}-${limitedDigits.slice(3, 5)}-${limitedDigits.slice(5)}`;
+  } else if (limitedDigits.length >= 4) {
+    return `${limitedDigits.slice(0, 3)}-${limitedDigits.slice(3)}`;
+  } else if (limitedDigits.length >= 1) {
+    return limitedDigits;
+  }
+  return '';
+};
+
+const formatDateForBackend = (dateString: string): string => {
+  if (!dateString) return '';
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return dateString;
+  
+  return date.toISOString().split('T')[0];
+};
+
 interface CustomerManagementProps {
   user: Employee;
 }
@@ -68,11 +92,16 @@ export default function CustomerManagement({ user }: CustomerManagementProps) {
     setSuccess('');
 
     try {
+      const formattedData = {
+        ...formData,
+        dateOfBirth: formatDateForBackend(formData.dateOfBirth)
+      };
+
       if (editingCustomer) {
-        await apiService.updateCustomer(editingCustomer.id, formData);
+        await apiService.updateCustomer(editingCustomer.id, formattedData);
         setSuccess('Customer updated successfully');
       } else {
-        await apiService.createCustomer(formData, user.id);
+        await apiService.createCustomer(formattedData, user.id);
         setSuccess('Customer created successfully');
       }
       
@@ -227,8 +256,13 @@ export default function CustomerManagement({ user }: CustomerManagementProps) {
                 <Input
                   id="ssn"
                   value={formData.ssn}
-                  onChange={(e) => setFormData({...formData, ssn: e.target.value})}
+                  onChange={(e) => {
+                    const formatted = formatSSN(e.target.value);
+                    setFormData({...formData, ssn: formatted});
+                  }}
                   placeholder="XXX-XX-XXXX"
+                  maxLength={11}
+                  pattern="^[0-9]{3}-[0-9]{2}-[0-9]{4}$"
                   required
                 />
               </div>
